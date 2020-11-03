@@ -2,6 +2,8 @@ package com.anish.trust_fall;
 
 import android.content.Context;
 import android.location.Location;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.anish.trust_fall.Emulator.EmulatorCheck;
 import com.anish.trust_fall.ExternalStorage.ExternalStorageCheck;
@@ -35,19 +37,24 @@ public class TrustFallPlugin implements MethodCallHandler {
     } else if (call.method.equals("isJailBroken")) {
       result.success(RootedCheck.isJailBroken(context));
     } else if (call.method.equals("canMockLocation")) {
-      MockLocationCheck.LocationResult locationResult = new MockLocationCheck.LocationResult(){
+      new Handler(Looper.getMainLooper()).post(new Runnable() {
         @Override
-        public void gotLocation(Location location){
-          //Got the location!
-          if(location != null){
-            result.success(location.isFromMockProvider());
-          }else {
-            result.success(false);
-          }
+        public void run() {
+          MockLocationCheck.LocationResult locationResult = new MockLocationCheck.LocationResult(){
+            @Override
+            public void gotLocation(Location location){
+              //Got the location!
+              if(location != null){
+                result.success(location.isFromMockProvider());
+              }else {
+                result.success(false);
+              }
+            }
+          };
+          MockLocationCheck mockLocationCheck = new MockLocationCheck();
+          mockLocationCheck.getLocation(context, locationResult);
         }
-      };
-      MockLocationCheck mockLocationCheck = new MockLocationCheck();
-      mockLocationCheck.getLocation(context, locationResult);
+      });
     }else if (call.method.equals("isRealDevice")) {
       result.success(!EmulatorCheck.isEmulator());
     }else if (call.method.equals("isOnExternalStorage")) {
